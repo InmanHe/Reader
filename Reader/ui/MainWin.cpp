@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "DpiAwareness.h"
+#include "MdExport.h"
 #include "DisplaySettingDlg.h"
 #include "BasicSettingDlg.h"
 #include "AdvanceSettingDlg.h"
@@ -89,6 +90,9 @@ LRESULT MainWin::handleMessage(UINT message, WPARAM wParam, LPARAM lParam)
             {
             case IDM_OPEN:
                 result = onOpenFile(message, wParam, lParam);
+                break;
+            case IDM_EXPORT_MD:
+                result = onExportMarkdown(message, wParam, lParam);
                 break;
             case IDM_CLEAR:
                 result = onClear(message, wParam, lParam);
@@ -273,7 +277,23 @@ void MainWin::postCreate()
     hideTaskbar(m_data.window.hideTaskbar);
     registerHotKey(true);
     initTimers();
-    m_session->init();
+
+    // "Reader.exe book.pdf" (file association / "open with"): open that book on first start too,
+    // not only when another instance is already running (SingleApp forwards it via WM_COPYDATA)
+    std::wstring startFile;
+    int argc = 0;
+    LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv)
+    {
+        if (argc > 1 && argv[1][0] != L'-' && argv[1][0] != L'/')
+        {
+            wchar_t full[MAX_PATH * 4];
+            DWORD n = GetFullPathNameW(argv[1], ARRAYSIZE(full), full, NULL);
+            startFile = (n > 0 && n < ARRAYSIZE(full)) ? full : argv[1];
+        }
+        LocalFree(argv);
+    }
+    m_session->init(startFile);
 }
 
 const WinConfig& MainWin::config(HINSTANCE hInstance)
@@ -488,6 +508,10 @@ LRESULT MainWin::onSize(UINT message, WPARAM wParam, LPARAM lParam)
     if (DisplayMode::BORDERLESS == m_data.window.mode && !m_isSwitching)
     {
         redrawWindow();
+    }
+    if (SIZE_MINIMIZED != wParam)
+    {
+        layoutTreeViews(); // the contents / bookmark lists follow window size, maximise, full screen and DPI
     }
     return -1;
 }
@@ -918,19 +942,34 @@ LRESULT MainWin::onDropFiles(UINT message, WPARAM wParam, LPARAM lParam)
 {
     HDROP hDropInfo = (HDROP)wParam;
     UINT  nFileCount = DragQueryFileW(hDropInfo, (UINT)-1, NULL, 0);
-    wchar_t fileName[MAX_PATH] = { 0 };
+    wchar_t fileName[MAX_PATH * 4] = { 0 };
+    std::wstring firstFile, bookFile;
 
     for (UINT i = 0; i < nFileCount; i++)
     {
-        DragQueryFileW(hDropInfo, i, fileName, sizeof(fileName));
-        if (GetFileAttributesW(fileName) & FILE_ATTRIBUTE_DIRECTORY)
+        // the size argument is in characters, not bytes
+        if (!DragQueryFileW(hDropInfo, i, fileName, ARRAYSIZE(fileName)))
         {
             continue;
         }
-        m_session->open(fileName);
-        break;
+        DWORD attr = GetFileAttributesW(fileName);
+        if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            continue;
+        }
+        if (firstFile.empty()) firstFile = fileName;
+        if (BookSession::isSupportedFile(fileName))
+        {
+            bookFile = fileName;
+            break;
+        }
     }
     DragFinish(hDropInfo);
+    if (bookFile.empty()) bookFile = firstFile; // let the session report the unsupported format
+    if (!bookFile.empty())
+    {
+        m_session->open(bookFile);
+    }
     return TRUE;
 }
 
@@ -955,6 +994,7 @@ LRESULT MainWin::onDpiChanged(UINT message, WPARAM wParam, LPARAM lParam)
     {
         SetWindowPos(m_hWnd, HWND_TOP, pRect->left, pRect->top, pRect->right - pRect->left, pRect->bottom - pRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
     }
+    layoutTreeViews();
     return TRUE;
 }
 
@@ -1059,7 +1099,8 @@ LRESULT MainWin::onOpenAdvanceSettingDlg(UINT message, WPARAM wParam, LPARAM lPa
 {
     AdvanceSettingDlg dlg(m_hInstance, m_hWnd);
     LRESULT result = dlg.exec();
-    if (dlg.isChanged() && m_session->isValid() && BookType::TEXT == m_session->book()->type())
+    if (dlg.isChanged() && m_session->isValid() &&
+        (BookType::TEXT == m_session->book()->type() || BookType::PDF == m_session->book()->type()))
     {
         m_session->reopen();
     }
@@ -1356,6 +1397,12 @@ LRESULT MainWin::onBookStateChanged(UINT message, WPARAM wParam, LPARAM lParam)
         case BookErrno::JSON_NODATA:
             ret = messageBox(IDS_JSON_PARSE_NODATA, IDS_ERROR, uType | uIcon);
             break;
+        case BookErrno::ENCRYPTED:
+            ret = messageBox(IDS_PDF_ENCRYPTED, IDS_ERROR, uType | uIcon);
+            break;
+        case BookErrno::NO_TEXT:
+            ret = messageBox(IDS_PDF_NO_TEXT, IDS_ERROR, uType | uIcon);
+            break;
         default:
             ret = messageBox(IDS_FILE_OPEN_FAIL, IDS_ERROR, uType | uIcon);
             break;
@@ -1413,6 +1460,7 @@ LRESULT MainWin::onUpdateBooks(UINT message, WPARAM wParam, LPARAM lParam)
     int bookMenuId = IDM_OPEN_BEGIN;
     hFile = CreateMenu();
     AppendMenu(hFile, MF_STRING, IDM_OPEN, loadString(IDS_MENU_OPEN).c_str());
+    AppendMenu(hFile, MF_STRING, IDM_EXPORT_MD, loadString(IDS_MENU_EXPORT_MD).c_str());
     AppendMenu(hFile, MF_SEPARATOR, 0, NULL);
 
     for (auto& book : m_data.books)
@@ -1459,10 +1507,16 @@ LRESULT MainWin::onUpdateChapters(UINT message, WPARAM wParam, LPARAM lParam)
         HTREEITEM hPrev = (HTREEITEM)TVI_FIRST;
 
         tvi.mask = TVIF_TEXT /*| TVIF_IMAGE | TVIF_SELECTEDIMAGE */ | TVIF_PARAM;
+        std::wstring title;
         for (int i = 0; i < m_session->book()->chapterCount(); i++)
         {
-            tvi.pszText = (LPWSTR)m_session->book()->chapter(i)->title.c_str();
-            tvi.cchTextMax = (int)m_session->book()->chapter(i)->title.size();
+            // nested bookmarks (PDF) are indented; the list stays flat so seeking/selection logic is unchanged
+            const Chapter* chapter = m_session->book()->chapter(i);
+            int level = chapter->level < 0 ? 0 : (chapter->level > 8 ? 8 : chapter->level);
+            title.assign((size_t)level * 2, 0x3000);
+            title += chapter->title;
+            tvi.pszText = (LPWSTR)title.c_str();
+            tvi.cchTextMax = (int)title.size();
             tvi.lParam = (LPARAM)i;
             tvins.item = tvi;
             tvins.hInsertAfter = hPrev;
@@ -1490,8 +1544,16 @@ LRESULT MainWin::onUpdateMarks(UINT message, WPARAM wParam, LPARAM lParam)
         tvi.mask = TVIF_TEXT /*| TVIF_IMAGE | TVIF_SELECTEDIMAGE */ | TVIF_PARAM;
         for (int i = 0; i < (int)marks.size(); i++)
         {
-            int len = marks[i] + MAX_MARK_TEXT > bookLen ? bookLen - marks[i] : MAX_MARK_TEXT;
-            memcpy(buffer, m_session->book()->text() + marks[i], len * sizeof(wchar_t));
+            // marks are persisted: after the file changed they may point past the end
+            int start = marks[i] < 0 ? 0 : (marks[i] > bookLen ? bookLen : marks[i]);
+            int len = start + MAX_MARK_TEXT > bookLen ? bookLen - start : MAX_MARK_TEXT;
+            if (len < 0) len = 0;
+            if (len > 0) memcpy(buffer, m_session->book()->text() + start, len * sizeof(wchar_t));
+            buffer[len] = 0; // the buffer is reused: terminate or the previous mark's tail shows up
+            for (int k = 0; k < len; k++)
+            {
+                if (buffer[k] == L'\n' || buffer[k] == L'\r') buffer[k] = L' ';
+            }
 
             tvi.pszText = buffer;
             tvi.cchTextMax = len;
@@ -1570,9 +1632,9 @@ LRESULT MainWin::onOpenFile(UINT message, WPARAM wParam, LPARAM lParam)
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = m_hWnd;
 #ifdef ENABLE_NETWORK
-    ofn.lpstrFilter = L"Files (*.txt;*.epub;*.mobi;*.ol;*.web)\0*.txt;*.epub;*.mobi;*.ol;*.web\0\0";
+    ofn.lpstrFilter = L"Files (*.txt;*.epub;*.pdf;*.mobi;*.azw3;*.azw;*.prc;*.ol;*.web)\0*.txt;*.epub;*.pdf;*.mobi;*.azw3;*.azw;*.prc;*.ol;*.web\0\0";
 #else
-    ofn.lpstrFilter = L"Files (*.txt;*.epub;*.mobi)\0*.txt;*.epub;*.mobi\0\0";
+    ofn.lpstrFilter = L"Files (*.txt;*.epub;*.pdf;*.mobi;*.azw3;*.azw;*.prc)\0*.txt;*.epub;*.pdf;*.mobi;*.azw3;*.azw;*.prc\0\0";
 #endif
     ofn.lpstrInitialDir = NULL;
     ofn.lpstrFile = szFileName;
@@ -1585,6 +1647,71 @@ LRESULT MainWin::onOpenFile(UINT message, WPARAM wParam, LPARAM lParam)
         return TRUE;
     }
     m_session->open(szFileName);
+    return TRUE;
+}
+
+LRESULT MainWin::onExportMarkdown(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (!m_session->isValid() || !m_session->book() || m_session->book()->length() <= 0)
+    {
+        messageBox(IDS_EXPORT_MD_NO_BOOK, IDS_TIPS, MB_ICONINFORMATION | MB_OK);
+        return TRUE;
+    }
+
+    IBook* book = m_session->book();
+    std::wstring target = MdExport::defaultOutputPath(book->fileName());
+    wchar_t szFileName[MAX_PATH * 4] = { 0 };
+    wcsncpy(szFileName, target.c_str(), ARRAYSIZE(szFileName) - 1);
+    std::wstring dir = target.substr(0, target.find_last_of(L"\\/") + 1);
+
+    OPENFILENAME ofn = { 0 };
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = m_hWnd;
+    ofn.lpstrFilter = L"Markdown (*.md)\0*.md\0\0";
+    ofn.lpstrDefExt = L"md";
+    ofn.lpstrInitialDir = dir.empty() ? NULL : dir.c_str();
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = ARRAYSIZE(szFileName);
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_EXPLORER;
+    if (!GetSaveFileNameW(&ofn))
+    {
+        return TRUE;
+    }
+
+    pauseAutoPage();
+    HCURSOR oldCursor = SetCursor(LoadCursor(NULL, IDC_WAIT));
+    std::vector<std::wstring> written;
+    int skipped = 0;
+    BookErrno err = MdExport::exportBook(book, szFileName, written, &skipped);
+    SetCursor(oldCursor);
+
+    if (BookErrno::SUCC != err || written.empty())
+    {
+        messageBox(IDS_EXPORT_MD_FAIL, IDS_ERROR, MB_ICONERROR | MB_OK);
+        resumeAutoPage();
+        return TRUE;
+    }
+
+    std::wstring list;
+    for (const auto& f : written) list += f + L"\r\n";
+    std::vector<wchar_t> msg(list.size() + 1024, 0);
+    std::wstring fmt;
+    if (skipped > 0)
+    {
+        std::wstring s = loadString(IDS_EXPORT_MD_SKIPPED);
+        std::vector<wchar_t> buf(s.size() + 32, 0);
+        _snwprintf(buf.data(), buf.size() - 1, s.c_str(), skipped);
+        fmt = buf.data();
+    }
+    std::wstring done = loadString(IDS_EXPORT_MD_DONE);
+    _snwprintf(msg.data(), msg.size() - 1, done.c_str(), list.c_str());
+    fmt += msg.data();
+    if (IDYES == messageBox(fmt.c_str(), loadString(IDS_SUCC).c_str(), MB_ICONINFORMATION | MB_YESNO))
+    {
+        std::wstring param = L"/select,\"" + written[0] + L"\"";
+        ShellExecuteW(m_hWnd, L"open", L"explorer.exe", param.c_str(), NULL, SW_SHOWNORMAL);
+    }
+    resumeAutoPage();
     return TRUE;
 }
 
@@ -2398,12 +2525,25 @@ void MainWin::updateTreeViewFont()
     {
         NONCLIENTMETRICS theMetrics = {0};
         theMetrics.cbSize = sizeof(NONCLIENTMETRICS);
+        UINT dpi = DpiAwareness::instance().dpi();
 
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0A00)
-        SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), (PVOID)&theMetrics, 0, DpiAwareness::instance().dpi());
-#else
-        SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), (PVOID)&theMetrics, 0);
-#endif
+        // SystemParametersInfoForDpi exists only on Windows 10 1607+: resolve it at run time so the
+        // program still starts on Windows 7/8 (x64) and XP (x86), and scale by hand there.
+        typedef BOOL(WINAPI* SpiForDpiProc)(UINT, UINT, PVOID, UINT, UINT);
+        static SpiForDpiProc spiForDpi = (SpiForDpiProc)GetProcAddress(GetModuleHandleW(L"user32.dll"), "SystemParametersInfoForDpi");
+        if (!spiForDpi || !spiForDpi(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), (PVOID)&theMetrics, 0, dpi))
+        {
+            SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), (PVOID)&theMetrics, 0);
+            HDC hdc = GetDC(NULL);
+            int sysDpi = GetDeviceCaps(hdc, LOGPIXELSY);
+            ReleaseDC(NULL, hdc);
+            if (sysDpi > 0 && (int)dpi != sysDpi)
+            {
+                theMetrics.lfMenuFont.lfHeight = MulDiv(theMetrics.lfMenuFont.lfHeight, dpi, sysDpi);
+                theMetrics.lfMenuFont.lfWidth = MulDiv(theMetrics.lfMenuFont.lfWidth, dpi, sysDpi);
+                theMetrics.iMenuHeight = MulDiv(theMetrics.iMenuHeight, dpi, sysDpi);
+            }
+        }
         newFont = theMetrics.lfMenuFont;
         iMenuHeight = abs((int)(theMetrics.iMenuHeight * 1.25f)); // 1.25 line height
     }
@@ -2424,6 +2564,23 @@ void MainWin::updateTreeViewFont()
     SendMessageW(m_hTreeMark, TVM_SETITEMHEIGHT, iMenuHeight, NULL);
 
     if (oldFont) DeleteObject(oldFont);
+}
+
+void MainWin::layoutTreeViews()
+{
+    // keep the contents / bookmark lists covering the text area when the window is resized,
+    // maximised, switched to borderless / full screen, or moved to a monitor with another DPI
+    RECT rc = drawTextRect();
+    HWND trees[] = { m_hTreeView, m_hTreeMark };
+    for (HWND tv : trees)
+    {
+        if (tv && IsWindowVisible(tv))
+        {
+            SetWindowPos(tv, NULL, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOACTIVATE);
+            HTREEITEM sel = TreeView_GetSelection(tv);
+            if (sel) TreeView_EnsureVisible(tv, sel);
+        }
+    }
 }
 
 DWORD MainWin::toModifiers(WPARAM wParam)

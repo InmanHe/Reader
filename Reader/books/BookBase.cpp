@@ -87,10 +87,11 @@ bool BookBase::isChapterContinuous(bool isNext, int index) const
         {
             // isNext = true  is pagedown/linedown
             // isNext = false is pageup/lineup
-            size_t target = isNext ? i - 1 : i + 1;
-            if (target >= 0 && target < m_chapters.size())
+            // (signed: "i - 1" on size_t wrapped around for the first chapter)
+            long long target = isNext ? (long long)i - 1 : (long long)i + 1;
+            if (target >= 0 && target < (long long)m_chapters.size())
             {
-                return m_chapters[target].index != -1;
+                return m_chapters[(size_t)target].index != -1;
             }
             else
             {

@@ -2,6 +2,7 @@
 #include "resource.h"
 #include "MainWin.h"
 #include "SingleApp.h"
+#include "MdExport.h"
 
 BOOL initApp()
 {
@@ -23,6 +24,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
+
+    // Reader.exe --to-md <files>: convert to Markdown and exit, works while the reader is running
+    int exitCode = 0;
+    if (MdExport::runCommandLine(exitCode))
+    {
+        return exitCode;
+    }
 
     SingleApp app(MainWin::className(hInstance));
     if (app.isRunning())

@@ -10,6 +10,9 @@
     <Filter Include="books">
       <UniqueIdentifier>{86019670-73ca-428d-8234-3b3154a02fc6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="books\pdf">
+      <UniqueIdentifier>{7d3c2b1a-5e4f-4a8b-9c6d-0f1e2a3b4c5d}</UniqueIdentifier>
+    </Filter>
     <Filter Include="utils">
       <UniqueIdentifier>{89c914f0-acb0-4e6e-ae2f-b505d25d450d}</UniqueIdentifier>
     </Filter>
@@ -184,6 +187,24 @@
     <ClInclude Include="books\BookMobi.h">
       <Filter>books</Filter>
     </ClInclude>
+    <ClInclude Include="books\BookPdf.h">
+      <Filter>books</Filter>
+    </ClInclude>
+    <ClInclude Include="books\pdf\PdfCrypt.h">
+      <Filter>books\pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="books\pdf\PdfParser.h">
+      <Filter>books\pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="books\pdf\PdfText.h">
+      <Filter>books\pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="common\MdExport.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\MdRender.h">
+      <Filter>utils</Filter>
+    </ClInclude>
     <ClInclude Include="utils\SingleApp.h">
       <Filter>utils</Filter>
     </ClInclude>
@@ -338,6 +359,24 @@
     </ClCompile>
     <ClCompile Include="books\BookMobi.cpp">
       <Filter>books</Filter>
+    </ClCompile>
+    <ClCompile Include="books\BookPdf.cpp">
+      <Filter>books</Filter>
+    </ClCompile>
+    <ClCompile Include="books\pdf\PdfCrypt.cpp">
+      <Filter>books\pdf</Filter>
+    </ClCompile>
+    <ClCompile Include="books\pdf\PdfParser.cpp">
+      <Filter>books\pdf</Filter>
+    </ClCompile>
+    <ClCompile Include="books\pdf\PdfText.cpp">
+      <Filter>books\pdf</Filter>
+    </ClCompile>
+    <ClCompile Include="common\MdExport.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\MdRender.cpp">
+      <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\3rdparty\miniz\miniz.c">
       <Filter>common</Filter>

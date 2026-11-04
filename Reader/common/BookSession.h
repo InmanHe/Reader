@@ -35,7 +35,7 @@ public:
     ~BookSession();
 
 public:
-    void              init();
+    void              init(const std::wstring& startFile = std::wstring());
     void              uninit();
     void              open(int index);
     void              open(const std::wstring& fileName, bool forced = false);
@@ -47,6 +47,11 @@ public:
     void              refreshChapter();
     void              refreshContent();
     void              checkBookUpdate();
+
+    // Creates the reader for a local/cached book by its extension (case-insensitive).
+    // hWnd may be NULL for headless use (e.g. command line conversion).
+    static IBook*     createBook(const std::wstring& fileName, HWND hWnd);
+    static bool       isSupportedFile(const std::wstring& fileName);
 
     BookState         state() const;
     BookErrno         lastError() const;

@@ -223,8 +223,10 @@ bool BookEpub::parseOpf(Files& files)
     for (auto& i : valueIdref)
     {
         auto it = m_epub->manifests.find(i);
-        if (m_epub->manifests.end() == it) return false;
-        if (0 != xmlStrcasecmp(BAD_CAST it->second.mediaType.c_str(), BAD_CAST "application/xhtml+xml")) continue; // skip
+        if (m_epub->manifests.end() == it) continue; // dangling idref: skip it instead of rejecting the whole book
+        // xhtml is the norm, but text/html and DTBook spines exist in the wild
+        const xmlChar* mt = BAD_CAST it->second.mediaType.c_str();
+        if (!xmlStrcasestr(mt, BAD_CAST "html") && 0 != xmlStrcasecmp(mt, BAD_CAST "application/x-dtbook+xml")) continue;
         m_epub->spines.push_back(&(it->second));
     }
     if (m_epub->spines.empty()) return false;
@@ -404,7 +406,8 @@ bool BookEpub::parseNcx(Files& files)
             }
             if (!text && xmlStrcasecmp(node->name, BAD_CAST "navLabel") == 0)
             {
-                text = xmlNodeGetContent(node->children);
+                // whole label: the first child may be whitespace or a comment
+                text = xmlNodeGetContent(node);
             }
             if (src && text) break;
             node = node->next;
@@ -475,11 +478,22 @@ bool BookEpub::parseCover(Files& files)
         auto itor = files.find(m_epub->cover.imageHref);
         if (files.end() == itor) return true; // not found
 
+        if (!itor->second.data || itor->second.size <= 0) return true;
         m_cover = (Cover*)malloc(sizeof(Cover));
-        m_cover->data = itor->second.data;
+        if (!m_cover) return true;
+        if (itor->second.ownData)
+        {
+            m_cover->data = itor->second.data; // take ownership
+            itor->second.data = nullptr;
+            itor->second.size = 0;
+        }
+        else
+        {
+            m_cover->data = (char*)malloc(itor->second.size); // mobi: memory belongs to libmobi
+            if (!m_cover->data) { freeCover(); return true; }
+            memcpy(m_cover->data, itor->second.data, itor->second.size);
+        }
         m_cover->size = itor->second.size;
-        itor->second.data = nullptr;
-        itor->second.size = 0;
     }
     return true;
 }
@@ -537,6 +551,14 @@ bool BookEpub::parseChapters(Files& files)
             {
                 if (title) { conv_free(title); title = nullptr; }
                 auto navpoint = m_epub->navpoints.find(spine->href);
+                if (m_epub->navpoints.end() == navpoint)
+                {
+                    // mobi keeps "file#anchor" keys for parts that could not be split
+                    std::string prefix = spine->href + "#";
+                    navpoint = m_epub->navpoints.lower_bound(prefix);
+                    if (m_epub->navpoints.end() != navpoint && navpoint->first.compare(0, prefix.size(), prefix) != 0)
+                        navpoint = m_epub->navpoints.end();
+                }
                 if (m_epub->navpoints.end() != navpoint &&
                     decodeText(navpoint->second.text.c_str(), (int)navpoint->second.text.size(), &title, &tlen))
                 {
@@ -560,6 +582,13 @@ bool BookEpub::parseChapters(Files& files)
 
     // rebuild m_text
     m_text = (wchar_t *)malloc(sizeof(wchar_t) * (m_length + 1));
+    if (!m_text)
+    {
+        for (auto& i : buffers) if (i.text) conv_free(i.text);
+        m_length = 0;
+        m_chapters.clear();
+        return false;
+    }
     m_text[m_length] = 0;
     int offset = 0;
     if (m_cover)

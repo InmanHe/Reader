@@ -73,6 +73,7 @@ protected:
     LRESULT onFullScreen(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onTopMost(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onOpenFile(UINT message, WPARAM wParam, LPARAM lParam);
+    LRESULT onExportMarkdown(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onAddMark(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onAutoPage(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onSearch(UINT message, WPARAM wParam, LPARAM lParam);
@@ -121,6 +122,7 @@ protected:
     void  updateTitle();
     void  updateStatusBar();
     void  updateTreeViewFont();
+    void  layoutTreeViews();
     DWORD toModifiers(WPARAM wParam);
     void  unloadBgImage();
     Image* loadBgImage(int w, int h, BYTE alpha);

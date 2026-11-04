@@ -52,6 +52,10 @@ bool BookText::editText(int start, int srcLen, wchar_t* const dstText, int dstLe
     else
     {
         wchar_t* newText = (wchar_t*)malloc((m_length + delta + 1) * sizeof(wchar_t));
+        if (!newText)
+        {
+            return false;
+        }
         if (start > 0)
         {
             memcpy(newText, m_text, start * sizeof(wchar_t));

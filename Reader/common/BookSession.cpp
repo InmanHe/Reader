@@ -2,6 +2,7 @@
 #include "BookText.h"
 #include "BookEpub.h"
 #include "BookMobi.h"
+#include "BookPdf.h"
 #include "BookOnline.h"
 #include "BookWeb.h"
 #include "LayoutText.h"
@@ -34,8 +35,16 @@ BookSession::~BookSession()
     IRenderer::instance()->cleanup();
 }
 
-void BookSession::init()
+void BookSession::init(const std::wstring& startFile)
 {
+    // a book passed on the command line / by file association wins over the last one read
+    if (!startFile.empty() && Utils::isFileExist(startFile))
+    {
+        open(startFile);
+        PostMessageW(m_hWnd, WM_UPDATEBOOKS, 0, NULL);
+        return;
+    }
+
     std::wstring fileName;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -111,32 +120,8 @@ void BookSession::open(const std::wstring& fileName, bool forced)
             return;
         }
 
-        std::wstring ext = Utils::fileExt(fileName);
-        if (ext == L".txt")
-        {
-            m_book = new BookText(fileName);
-        }
-        else if (ext == L".epub")
-        {
-            m_book = new BookEpub(fileName);
-        }
-        else if (ext == L".mobi")
-        {
-            m_book = new BookMobi(fileName);
-        }
-    #ifdef ENABLE_NETWORK
-        else if (ext == L".ol")
-        {
-            m_book = new BookOnline(fileName);
-            dynamic_cast<BookOnline*>(m_book)->setHWND(m_hWnd);
-        }
-        else if (ext == L".web")
-        {
-            m_book = new BookWeb(fileName);
-            dynamic_cast<BookWeb*>(m_book)->setHWND(m_hWnd);
-        }
-    #endif
-        else
+        m_book = createBook(fileName, m_hWnd);
+        if (!m_book)
         {
             remBookItem(fileName);
             setError(BookErrno::UNKNOWN_FORMAT);
@@ -179,6 +164,46 @@ void BookSession::open(const std::wstring& fileName, bool forced)
         PostMessageW(m_hWnd, WM_UPDATECHAPTERS, 0, NULL);
         PostMessageW(m_hWnd, WM_UPDATEMARKS, 0, NULL);
     });
+}
+
+IBook* BookSession::createBook(const std::wstring& fileName, HWND hWnd)
+{
+    std::wstring ext = Utils::fileExt(fileName);
+    for (auto& c : ext) c = towlower(c);
+
+    if (ext == L".txt")  return new BookText(fileName);
+    if (ext == L".epub") return new BookEpub(fileName);
+    if (ext == L".pdf")  return new BookPdf(fileName);
+    // AZW3 (KF8), AZW and PRC are MOBI containers handled by libmobi
+    if (ext == L".mobi" || ext == L".azw3" || ext == L".azw" || ext == L".prc") return new BookMobi(fileName);
+#ifdef ENABLE_NETWORK
+    if (hWnd && ext == L".ol")
+    {
+        BookOnline* book = new BookOnline(fileName);
+        book->setHWND(hWnd);
+        return book;
+    }
+    if (hWnd && ext == L".web")
+    {
+        BookWeb* book = new BookWeb(fileName);
+        book->setHWND(hWnd);
+        return book;
+    }
+#endif
+    return nullptr;
+}
+
+bool BookSession::isSupportedFile(const std::wstring& fileName)
+{
+    std::wstring ext = Utils::fileExt(fileName);
+    for (auto& c : ext) c = towlower(c);
+    static const wchar_t* EXTS[] = { L".txt", L".epub", L".pdf", L".mobi", L".azw3", L".azw", L".prc"
+#ifdef ENABLE_NETWORK
+        , L".ol", L".web"
+#endif
+    };
+    for (const wchar_t* e : EXTS) if (ext == e) return true;
+    return false;
 }
 
 void BookSession::reopen()

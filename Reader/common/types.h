@@ -158,7 +158,8 @@ enum class BookType
     EPUB,
     MOBI,
     ONLINE,
-    WEB
+    WEB,
+    PDF
 };
 
 enum class BookErrno
@@ -181,6 +182,8 @@ enum class BookErrno
     XPATH_FAIL,
     JSON_FAIL,
     JSON_NODATA,
+    ENCRYPTED,      // document needs a password
+    NO_TEXT,        // no extractable text (e.g. scanned PDF)
 };
 
 typedef std::vector<int> Marks;
@@ -200,6 +203,9 @@ struct Chapter
     std::wstring title;
     std::string url;    // for online book
     int textLen;        // for online book, current chapter content size
+    int level;          // outline depth, 0 = top level (PDF bookmarks)
+
+    Chapter() : index(0), titleLineLen(0), textLen(0), level(0) {}
 };
 typedef std::vector<Chapter> Chapters;
 

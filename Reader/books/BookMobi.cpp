@@ -148,10 +148,12 @@ bool BookMobi::parseCover(Files& files)
         size_t first_resource = mobi_get_first_resource_record(m_mobi->m);
         size_t uid = first_resource + offset;
         record = mobi_get_record_by_seqnumber(m_mobi->m, uid);
-        if (!record || record->size <= 0) return true;
+        if (!record || record->size == 0 || !record->data) return true;
 
         m_cover = (Cover*)malloc(sizeof(Cover));
+        if (!m_cover) return true;
         m_cover->data = (char*)malloc(record->size);
+        if (!m_cover->data) { freeCover(); return true; }
         m_cover->size = (int)record->size;
         memcpy(m_cover->data, record->data, record->size);
     }
@@ -463,7 +465,7 @@ bool BookMobi::splitHtmlByNavpoints(Files& files)
                 memcpy(fdata.data, parts[i].xhtml.c_str(), fdata.size);
                 fdata.data[fdata.size] = 0;
                 fdata.ownData = true;
-                files.insert(std::make_pair(newFileName, fdata));
+                if (!files.insert(std::make_pair(newFileName, fdata)).second) free(fdata.data); // name clash: don't leak
             }
 
             // Add new Manifest

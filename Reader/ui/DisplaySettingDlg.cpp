@@ -692,7 +692,7 @@ LRESULT CALLBACK DisplaySettingDlg::chooseFontComboProc(HWND hWnd, UINT message,
     {
         COLORREF color = (COLORREF)SendMessage(hWnd, CB_GETITEMDATA, 0, 0);
         std::wstring rgb = Utils::toRGB(color);
-        _swprintf((TCHAR *)lParam, rgb.c_str());
+        wcscpy((TCHAR *)lParam, rgb.c_str()); // not a format string
         return 7;
     }
     case WM_NCDESTROY:

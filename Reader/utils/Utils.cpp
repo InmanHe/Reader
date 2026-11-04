@@ -308,10 +308,12 @@ std::wstring Utils::fileExt(const std::wstring& path)
 
 std::wstring Utils::fileName(const std::wstring& path)
 {
-    wchar_t szFileName[MAX_PATH] = { 0 };
-    wcscpy(szFileName, path.c_str());
-    PathRemoveExtensionW(szFileName);
-    return PathFindFileNameW(szFileName);
+    // no fixed MAX_PATH buffer: long paths (\\?\ or long folder names) overflowed it
+    size_t slash = path.find_last_of(L"\\/");
+    std::wstring name = slash == std::wstring::npos ? path : path.substr(slash + 1);
+    size_t dot = name.find_last_of(L'.');
+    if (dot != std::wstring::npos && dot > 0) name.resize(dot);
+    return name;
 }
 
 bool Utils::isFileExist(const std::wstring& path)
@@ -630,7 +632,7 @@ std::wstring Utils::fnv1a32(const void* data, size_t size)
     }
 
     wchar_t hash[16] = {0};
-    swprintf(hash, MAX_PATH, L"%08x", h);
+    swprintf(hash, ARRAYSIZE(hash), L"%08x", h);
     return hash;
 }
 
