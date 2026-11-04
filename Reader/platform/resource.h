@@ -255,6 +255,10 @@
 #define IDS_EXPORT_MD_SKIPPED           314
 #define IDS_PDF_ENCRYPTED               315
 #define IDS_PDF_NO_TEXT                 316
+#define IDS_LANGUAGE_RESTART            317
+#define IDS_LANGUAGE_AUTO               318
+#define IDC_STATIC_UPDATER              1200
+#define IDC_COMBO_LANGUAGE              1201
 #define IDC_EDIT_LINEGAP                1000
 #define IDC_STATIC_COPYRIGHT            1000
 #define IDC_EDIT_BORDER                 1001

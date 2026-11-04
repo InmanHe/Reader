@@ -25,6 +25,8 @@ LRESULT AboutDlg::onInitDialog()
     fReplaceText(m_hWnd, IDC_STATIC_VERSION, L"{VERSION}", Utils::appVersion());
     fReplaceText(m_hWnd, IDC_STATIC_COPYRIGHT, L"{YEAR}", Utils::currentYear());
     fReplaceText(m_hWnd, IDC_STATIC_LINK, L"{SOURCE}", SOURCE_ADDRESS);
+    fReplaceText(m_hWnd, IDC_STATIC_UPDATER, L"{UPDATER}", UPDATE_AUTHOR);
+    fReplaceText(m_hWnd, IDC_STATIC_UPDATER, L"{DATE}", UPDATE_DATE);
     centerParent();
     return TRUE;
 }

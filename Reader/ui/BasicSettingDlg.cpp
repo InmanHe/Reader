@@ -55,6 +55,14 @@ LRESULT BasicSettingDlg::onInitDialog()
     CheckDlgButton(m_hWnd, IDC_CHECK_TRAY, data.window.minToTray ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(m_hWnd, IDC_CHECK_TASKBAR, data.window.hideTaskbar ? BST_CHECKED : BST_UNCHECKED);
 
+    // UI language: language names are always shown in their own language
+    HWND hLang = GetDlgItem(m_hWnd, IDC_COMBO_LANGUAGE);
+    SendMessage(hLang, CB_ADDSTRING, 0, (LPARAM)loadString(IDS_LANGUAGE_AUTO).c_str());
+    SendMessage(hLang, CB_ADDSTRING, 0, (LPARAM)L"\u7B80\u4F53\u4E2D\u6587");  // Simplified Chinese
+    SendMessage(hLang, CB_ADDSTRING, 0, (LPARAM)L"\u7E41\u9AD4\u4E2D\u6587");  // Traditional Chinese
+    SendMessage(hLang, CB_ADDSTRING, 0, (LPARAM)L"English");
+    SendMessage(hLang, CB_SETCURSEL, (data.language >= 0 && data.language <= 3) ? data.language : 0, NULL);
+
     centerParent();
     return TRUE;
 }
@@ -89,6 +97,13 @@ LRESULT BasicSettingDlg::onEndDialog(INT_PTR nResult)
         m_isHideTaskbarChanged = data.window.hideTaskbar != (IsDlgButtonChecked(m_hWnd, IDC_CHECK_TASKBAR) == BST_CHECKED);
         data.window.minToTray = IsDlgButtonChecked(m_hWnd, IDC_CHECK_TRAY) == BST_CHECKED;
         data.window.hideTaskbar = IsDlgButtonChecked(m_hWnd, IDC_CHECK_TASKBAR) == BST_CHECKED;
+
+        int language = (int)SendMessage(GetDlgItem(m_hWnd, IDC_COMBO_LANGUAGE), CB_GETCURSEL, 0, NULL);
+        if (language >= 0 && language != data.language)
+        {
+            data.language = language;
+            messageBox(IDS_LANGUAGE_RESTART, IDS_TIPS, MB_ICONINFORMATION | MB_OK);
+        }
 
         Settings::instance().save();
     }

@@ -37,9 +37,9 @@ CJSON_DEFINE_TYPE(TagInfo, enable, keyword, font, textColor, backgroundColor)
 CJSON_DEFINE_TYPE(BookSource, title, host, queryUrl, queryMethod, queryParams, queryCharset, bookNameXpath, bookMainpageXpath, bookAuthorXpath, enableChapterPage, chapterPageXpath, chapterTitleXpath, chapterUrlXpath, enableChapterNext, chapterNextUrlXpath, chapterNextKeywordXpath, chapterNextKeyword, contentXpath, enableContentNext, contentNextUrlXpath, contentNextKeywordXpath, contentNextKeyword, contentFilterType, contentFilterKeyword)
 CJSON_DEFINE_TYPE(BookInfo, fileName, index, marks, hasNew)
 #if ENABLE_TAG
-CJSON_DEFINE_TYPE(Data, version, window, background, network, paging, keyset, styles, layout, chapterRule, upgrade, webShelf, customColors, tags, sources, books)
+CJSON_DEFINE_TYPE(Data, version, language, window, background, network, paging, keyset, styles, layout, chapterRule, upgrade, webShelf, customColors, tags, sources, books)
 #else
-CJSON_DEFINE_TYPE(Data, version, window, background, network, paging, keyset, styles, layout, chapterRule, upgrade, webShelf, customColors, sources, books)
+CJSON_DEFINE_TYPE(Data, version, language, window, background, network, paging, keyset, styles, layout, chapterRule, upgrade, webShelf, customColors, sources, books)
 #endif
 CJSON_DEFINE_TYPE(VersionInfo, version, downloadurl, description, force)
 CJSON_DEFINE_TYPE(VersionList, list)

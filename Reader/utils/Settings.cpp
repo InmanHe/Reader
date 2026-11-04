@@ -261,6 +261,7 @@ void Settings::defaultData(Data& data)
 
     data.upgrade.ignoreVersion = L"";
     data.upgrade.lastCheckTime = 0;
+    data.language = 0;
 
     data.customColors.resize(MAX_CUSTOMCOLORS_COUNT);
     for (int i = 0; i < MAX_CUSTOMCOLORS_COUNT; i++)

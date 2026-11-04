@@ -1,0 +1,54 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            outdir: x64\Release
+            toolset: v143
+          - platform: x86
+            outdir: Release
+            toolset: v141_xp   # Windows XP compatible build, as in rebuild.bat
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Install Windows XP toolset (v141_xp)
+        if: matrix.toolset == 'v141_xp'
+        id: xp
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $p = Start-Process -Wait -PassThru "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath `"$vs`" --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 --add Microsoft.VisualStudio.Component.WinXP --quiet --norestart --nocache"
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "vs_installer exit $($p.ExitCode)" }
+
+      - name: Build
+        shell: cmd
+        run: |
+          set TOOLSET=${{ matrix.toolset }}
+          if "${{ steps.xp.outcome }}"=="failure" set TOOLSET=v143
+          echo Toolset: %TOOLSET%
+          msbuild Reader.sln /m /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:PlatformToolset=%TOOLSET% /v:minimal
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force pkg | Out-Null
+          Copy-Item "${{ matrix.outdir }}\Reader.exe" pkg\
+          Copy-Item README.md, CHANGELOG.md pkg\
+          Get-Item pkg\Reader.exe | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Reader-${{ matrix.platform }}
+          path: pkg

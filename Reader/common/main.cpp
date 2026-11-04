@@ -3,6 +3,8 @@
 #include "MainWin.h"
 #include "SingleApp.h"
 #include "MdExport.h"
+#include "Settings.h"
+#include "Utils.h"
 
 BOOL initApp()
 {
@@ -45,6 +47,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return -1;
     }
 
+    Utils::applyUiLanguage(Settings::instance().data().language);
     MainWin win(hInstance);
 
     MSG msg;

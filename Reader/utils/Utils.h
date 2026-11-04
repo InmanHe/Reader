@@ -45,6 +45,9 @@ public:
     static std::wstring timeStr(std::time_t t);
     static std::wstring currentDateTime();
     static std::wstring currentYear();
+    // Selects the resource language (menus, dialogs, strings) for the calling thread.
+    // lang: 0 follow Windows, 1 Simplified Chinese, 2 Traditional Chinese, 3 English
+    static void applyUiLanguage(int lang);
     static std::wstring lastErrorMessage(DWORD errorCode);
     static void replace(std::wstring& str, const std::wstring& from, const std::wstring& to);
     static void replace(std::string& str, const std::string& from, const std::string& to);

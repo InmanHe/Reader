@@ -306,6 +306,36 @@ std::wstring Utils::fileExt(const std::wstring& path)
 #endif
 }
 
+void Utils::applyUiLanguage(int lang)
+{
+    const LANGID ZH_CN = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED);
+    const LANGID ZH_TW = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL);
+    const LANGID EN_US = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+    LANGID id;
+    switch (lang)
+    {
+    case 1:  id = ZH_CN; break;
+    case 2:  id = ZH_TW; break;
+    case 3:  id = EN_US; break;
+    default:
+    {
+        LANGID ui = GetUserDefaultUILanguage();
+        if (PRIMARYLANGID(ui) != LANG_CHINESE) id = EN_US;
+        else
+        {
+            WORD sub = SUBLANGID(ui);
+            id = (sub == SUBLANG_CHINESE_SIMPLIFIED || sub == SUBLANG_CHINESE_SINGAPORE) ? ZH_CN : ZH_TW; // TW / HK / MO
+        }
+        break;
+    }
+    }
+    // Vista+: resource lookup follows the thread UI language; XP: it follows the thread locale
+    typedef LANGID(WINAPI* SetThreadUILanguageProc)(LANGID);
+    SetThreadUILanguageProc setUi = (SetThreadUILanguageProc)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadUILanguage");
+    if (setUi) setUi(id);
+    SetThreadLocale(MAKELCID(id, SORT_DEFAULT));
+}
+
 std::wstring Utils::fileName(const std::wstring& path)
 {
     // no fixed MAX_PATH buffer: long paths (\\?\ or long folder names) overflowed it

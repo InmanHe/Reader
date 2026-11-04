@@ -555,6 +555,7 @@ struct UpgradeInfo
 struct Data
 {
     std::wstring            version;
+    int                     language;   // UI language: 0 auto, 1 zh-CN, 2 zh-TW, 3 en
     WindowInfo              window;
     BackgroundInfo          background;
     NetworkInfo             network;
