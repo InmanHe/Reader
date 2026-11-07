@@ -29,7 +29,7 @@
 #define DEFAULT_TEXT_COLOR          (RGB(0, 0, 0))
 #define DEFAULT_TEXTBG_COLOR        (RGB(255, 255, 255))
 #define SOURCE_ADDRESS              (L"https://github.com/binbyu/Reader")
-#define UPDATE_AUTHOR               (L"{{UPDATER_NAME}}")      // shown in the About dialog
+#define UPDATE_AUTHOR               (L"InmanHe")      // shown in the About dialog
 #define UPDATE_DATE                 (L"2026-11-04")
 #define BOOKSOURCE_MANUAL_DOC       (L"https://github.com/binbyu/Reader/blob/master/doc/bs.md")
 #define BOOKSOURCE_SAMPLE_FILE      ("https://raw.githubusercontent.com/binbyu/Reader/refs/heads/master/misc/bs.json")
