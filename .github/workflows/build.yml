@@ -1,0 +1,92 @@
+name: build
+
+on:
+  push:
+    branches-ignore: [builds]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            outdir: x64\Release
+            toolset: v143
+          - platform: x86
+            outdir: Release
+            toolset: v141_xp   # Windows XP compatible build, as in rebuild.bat
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Install Windows XP toolset (v141_xp)
+        if: matrix.toolset == 'v141_xp'
+        id: xp
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $p = Start-Process -Wait -PassThru "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath `"$vs`" --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 --add Microsoft.VisualStudio.Component.WinXP --quiet --norestart --nocache"
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "vs_installer exit $($p.ExitCode)" }
+
+      - name: Build
+        shell: cmd
+        run: |
+          set TOOLSET=${{ matrix.toolset }}
+          if "${{ steps.xp.outcome }}"=="failure" set TOOLSET=v143
+          echo Toolset: %TOOLSET%
+          msbuild Reader.sln /m /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:PlatformToolset=%TOOLSET% /v:minimal
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force pkg | Out-Null
+          Copy-Item "${{ matrix.outdir }}\Reader.exe" pkg\
+          Copy-Item README.md, CHANGELOG.md pkg\
+          Get-Item pkg\Reader.exe | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Reader-${{ matrix.platform }}
+          path: pkg
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Pack
+        run: |
+          cd dist
+          VER=3.2.0.0
+          (cd Reader-x64 && zip -9 -r ../Reader-v$VER-x64.zip .)
+          (cd Reader-x86 && zip -9 -r ../Reader-v$VER-x86-xp.zip .)
+          ls -la
+
+      - name: Store builds on the 'builds' branch
+        run: |
+          mkdir pub && cp dist/*.zip pub/ && cd pub
+          git init -q -b builds
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "Build ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" builds
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=v3.2.0.0
+          gh release delete "$TAG" -y --cleanup-tag -R "${{ github.repository }}" || true
+          gh release create "$TAG" dist/*.zip -R "${{ github.repository }}" --target "${{ github.sha }}" \
+            --title "Reader v3.2.0.0" --notes "PDF / AZW3 support, Markdown export for NotebookLM, zh-CN / zh-TW / en UI. See CHANGELOG.md."
