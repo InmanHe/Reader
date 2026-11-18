@@ -57,6 +57,7 @@ protected:
     LRESULT onOpenAboutDlg(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onRestoreDefault(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onClear(UINT message, WPARAM wParam, LPARAM lParam);
+    LRESULT onExport(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onView(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onMark(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onSaveSettingResult(UINT message, WPARAM wParam, LPARAM lParam);
@@ -68,6 +69,7 @@ protected:
     LRESULT onUpdateBooks(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onUpdateChapters(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onUpdateMarks(UINT message, WPARAM wParam, LPARAM lParam);
+    LRESULT onRendererChanged(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onHideWindow(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onHideBorder(UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT onFullScreen(UINT message, WPARAM wParam, LPARAM lParam);
@@ -124,8 +126,12 @@ protected:
     void  updateTreeViewFont();
     void  layoutTreeViews();
     DWORD toModifiers(WPARAM wParam);
+    void  unloadLoadingImage();
+    void  reloadLoadingImage();
     void  unloadBgImage();
     Image* loadBgImage(int w, int h, BYTE alpha);
+    void   unloadBgSrcImage();
+    Image* loadBgSrcImage();
 
 protected:
     BookSession*    m_session;
@@ -134,6 +140,7 @@ protected:
     HWND            m_hStatusBar;
     HWND            m_hTreeView;
     HWND            m_hTreeMark;
+    HWND            m_hDummy;
     EditController* m_hEditCtrl;
     HWND            m_hFindDlg;
     UINT            m_uFindMsgId;
@@ -142,6 +149,7 @@ protected:
     HHOOK           m_hKeyboardHook;
     Image*          m_imgLoading;
     Image*          m_imgBackground;
+    Image*          m_imgBgSrc;
     bool            m_isSwitching;
     bool            m_isCreating;
     bool            m_autoPageEnabled;

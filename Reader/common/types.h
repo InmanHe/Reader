@@ -9,11 +9,11 @@
 
 /////////////////////////////////////////////
 // renderer
-enum WrapMode
+enum RendererType
 {
-    STRETCH,
-    TILE,
-    TILEFLIP
+    D2D,
+    GDIPLUS,
+    GDI,
 };
 
 struct TextMetrics
@@ -352,6 +352,13 @@ struct TextInfo
     }
 };
 
+enum WrapMode
+{
+    STRETCH,
+    TILE,
+    TILEFLIP
+};
+
 struct BackgroundInfo
 {
     bool enableImage;
@@ -556,6 +563,8 @@ struct Data
 {
     std::wstring            version;
     int                     language;   // UI language: 0 auto, 1 zh-CN, 2 zh-TW, 3 en
+    RendererType            rendererType;
+    bool                    clearType;
     WindowInfo              window;
     BackgroundInfo          background;
     NetworkInfo             network;

@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/InmanHe/Reader/releases"><img src="https://img.shields.io/github/v/release/InmanHe/Reader?color=blue&label=Release" alt="Release"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-更新日志-blue.svg" alt="Changelog"></a>
-  <img src="https://img.shields.io/badge/Version-3.2.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-3.2.1.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/Built%20with-Claude%20(Anthropic)-d97757.svg" alt="Built with Claude">
   <a href="https://github.com/binbyu/Reader"><img src="https://img.shields.io/badge/Upstream-binbyu%2FReader-lightgrey.svg" alt="Upstream"></a>
   <img src="https://img.shields.io/badge/Platform-Windows-lightgrey.svg" alt="Platform">
@@ -29,7 +29,7 @@
 </p>
 
 > [!NOTE]
-> 本仓库是 [binbyu/Reader](https://github.com/binbyu/Reader) 的分支版本（**v3.2.0.0**，维护者 [InmanHe](https://github.com/InmanHe)，2026-11-04）。
+> 本仓库是 [binbyu/Reader](https://github.com/binbyu/Reader) 的分支版本（**v3.2.1.0**，维护者 [InmanHe](https://github.com/InmanHe)，2026-11-18）。
 > 在原版基础上新增了 **PDF / AZW3 支持、导出 Markdown（适用于 NotebookLM）、简繁英三语界面** 等功能，
 > 这些新功能与修复由 **[Claude](https://claude.ai)（Anthropic 开发的 AI 助手）** 编写，详见 [v3.2.0 新增功能](#-v320-新增功能由-claude-开发)。
 > 原版的全部功能与设计归原作者余彬彬所有。
@@ -141,7 +141,7 @@
 
 ## 🚀 下载与版本说明
 
-本分支（v3.2.0）的程序包可在 [InmanHe/Reader Releases](https://github.com/InmanHe/Reader/releases) 下载：`Reader-v3.2.0.0-x64.zip`（Win7 及以上）、`Reader-v3.2.0.0-x86-xp.zip`（兼容 XP）。
+本分支（v3.2.1）的程序包可在 [InmanHe/Reader Releases](https://github.com/InmanHe/Reader/releases) 下载：`Reader-v3.2.1.0-x64.zip`（Win7 及以上）、`Reader-v3.2.1.0-x86-xp.zip`（兼容 XP）。
 原作者的历史版本见 [binbyu/Reader Releases](https://github.com/binbyu/Reader/releases)。各构建版本说明如下：
 
 | 版本分类 | 运行环境与说明 |

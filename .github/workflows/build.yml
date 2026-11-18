@@ -58,6 +58,7 @@ jobs:
           path: pkg
 
   publish:
+    if: github.ref == 'refs/heads/feature/pdf-azw3-markdown'
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -68,25 +69,32 @@ jobs:
       - name: Pack
         run: |
           cd dist
-          VER=3.2.0.0
+          VER=3.2.1.0
           (cd Reader-x64 && zip -9 -r ../Reader-v$VER-x64.zip .)
           (cd Reader-x86 && zip -9 -r ../Reader-v$VER-x86-xp.zip .)
           ls -la
 
+      - uses: actions/checkout@v4
+        with:
+          ref: builds
+          path: pub
+
       - name: Store builds on the 'builds' branch
         run: |
-          mkdir pub && cp dist/*.zip pub/ && cd pub
-          git init -q -b builds
+          cp dist/*.zip pub/
+          cd pub
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add . && git commit -qm "Build ${GITHUB_SHA::7}"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" builds
+          git add *.zip
+          if ! git diff --cached --quiet; then
+            git commit -m "Build ${GITHUB_SHA::7}"
+            git push origin HEAD:builds
+          fi
 
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG=v3.2.0.0
-          gh release delete "$TAG" -y --cleanup-tag -R "${{ github.repository }}" || true
+          TAG=v3.2.1.0
           gh release create "$TAG" dist/*.zip -R "${{ github.repository }}" --target "${{ github.sha }}" \
-            --title "Reader v3.2.0.0" --notes "PDF / AZW3 support, Markdown export for NotebookLM, zh-CN / zh-TW / en UI. See CHANGELOG.md."
+            --title "Reader v3.2.1.0" --notes "同步主分支 v3.1.5.0，新增 TXT 导出、GDI / GDI+ / Direct2D 渲染选择及 ClearType 设置，修复在线书籍目录和多显示器问题。保留 PDF、AZW3、Markdown 导出和三语界面。"

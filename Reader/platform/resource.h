@@ -259,6 +259,10 @@
 #define IDS_LANGUAGE_AUTO               318
 #define IDC_STATIC_UPDATER              1200
 #define IDC_COMBO_LANGUAGE              1201
+#define IDS_BOOK_EXPORT_UNFETCH_TIPS    319
+#define IDS_BOOK_EXPORT_TIPS            320
+#define IDS_EXPORT                      321
+#define IDS_MENU_EXPORT                 321
 #define IDC_EDIT_LINEGAP                1000
 #define IDC_STATIC_COPYRIGHT            1000
 #define IDC_EDIT_BORDER                 1001
@@ -307,7 +311,11 @@
 #define IDC_EDIT_PROXY_USER             1031
 #define IDC_EDIT_PROXY_PASS             1032
 #define IDC_COMBO_PROXY                 1033
+#define IDC_COMBO3                      1033
+#define IDC_COMBO_RENDER                1033
 #define IDC_BUTTON_UPGRADE_INGORE       1034
+#define IDC_CHECK1                      1034
+#define IDC_CHECK_CLEARTYPE             1034
 #define IDC_BUTTON_UPGRADE_DOWN         1035
 #define IDC_EDIT_UPGRADE_VERSION        1036
 #define IDC_EDIT_UPGRADE_DESC           1037
@@ -425,7 +433,6 @@
 #define IDC_CHECK_REFRESH_CONTENT       1161
 #define IDC_BUTTON_TEXT_FONT            1162
 #define IDC_CHECK_MOUSEHIDE             1162
-#define IDC_CHECK_SAME                  1163
 #define IDC_CHECK_SAMETEXTSTYLE         1163
 #define IDC_BUTTON_CHAPTER_FONT         1164
 #define IDC_BUTTON_BGCOLOR              1165
@@ -434,7 +441,9 @@
 #define IDM_OPEN                        32771
 #define IDM_DISPLAY                     32772
 #define IDM_NETWORK                     32773
+#define ID_Menu                         32774
 #define IDM_WEB                         32775
+#define IDM_EXPORT                      32776
 #define IDM_DEFAULT                     32781
 #define IDM_VIEW                        32784
 #define IDM_CLEAR                       32788
@@ -453,8 +462,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        302
-#define _APS_NEXT_COMMAND_VALUE         32774
-#define _APS_NEXT_CONTROL_VALUE         1030
+#define _APS_NEXT_COMMAND_VALUE         32777
+#define _APS_NEXT_CONTROL_VALUE         1035
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
