@@ -119,12 +119,14 @@ public://utils
 
     int messageBoxFmt(UINT textFormatId, UINT captionId, UINT uType, ...)
     {
-        WCHAR szText[MAX_LOADSTRING] = { 0 };
+        // file paths alone can exceed MAX_LOADSTRING; _vsnwprintf does not terminate a truncated result
+        WCHAR szText[MAX_LOADSTRING * 16] = { 0 };
         std::wstring format = loadString(textFormatId);
         va_list args;
         va_start(args, uType);
-        _vsnwprintf(szText, MAX_LOADSTRING, format.c_str(), args);
+        _vsnwprintf(szText, ARRAYSIZE(szText) - 1, format.c_str(), args);
         va_end(args);
+        szText[ARRAYSIZE(szText) - 1] = 0;
         return messageBox(szText, loadString(captionId).c_str(), uType);
     }
 

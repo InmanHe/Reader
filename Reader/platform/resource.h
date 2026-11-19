@@ -248,10 +248,21 @@
 #define IDS_JSON_PARSE_NODATA           307
 #define IDS_WEB_REQUEST_FAIL            308
 #define IDS_WEB_STATUS_ERROR            309
-#define IDS_BOOK_EXPORT_UNFETCH_TIPS    310
-#define IDS_BOOK_EXPORT_TIPS            311
-#define IDS_EXPORT                      312
-#define IDS_MENU_EXPORT                 312
+#define IDS_MENU_EXPORT_MD              310
+#define IDS_EXPORT_MD_NO_BOOK           311
+#define IDS_EXPORT_MD_DONE              312
+#define IDS_EXPORT_MD_FAIL              313
+#define IDS_EXPORT_MD_SKIPPED           314
+#define IDS_PDF_ENCRYPTED               315
+#define IDS_PDF_NO_TEXT                 316
+#define IDS_LANGUAGE_RESTART            317
+#define IDS_LANGUAGE_AUTO               318
+#define IDC_STATIC_UPDATER              1200
+#define IDC_COMBO_LANGUAGE              1201
+#define IDS_BOOK_EXPORT_UNFETCH_TIPS    319
+#define IDS_BOOK_EXPORT_TIPS            320
+#define IDS_EXPORT                      321
+#define IDS_MENU_EXPORT                 321
 #define IDC_EDIT_LINEGAP                1000
 #define IDC_STATIC_COPYRIGHT            1000
 #define IDC_EDIT_BORDER                 1001
@@ -442,6 +453,7 @@
 #define IDM_ADVSET                      32802
 #define IDM_TAGSET                      32803
 #define IDM_ONLINE                      32804
+#define IDM_EXPORT_MD                   32805
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

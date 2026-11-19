@@ -52,6 +52,10 @@ bool BookText::editText(int start, int srcLen, wchar_t* const dstText, int dstLe
     else
     {
         wchar_t* newText = (wchar_t*)malloc((m_length + delta + 1) * sizeof(wchar_t));
+        if (!newText)
+        {
+            return false;
+        }
         if (start > 0)
         {
             memcpy(newText, m_text, start * sizeof(wchar_t));
@@ -382,7 +386,7 @@ bool BookText::isValidNumber(wchar_t* text, int len)
         L'壹', L'贰', L'叁', L'肆',
         L'伍', L'陆', L'柒', L'捌', L'玖',
         L'拾', L'佰', L'仟', L'萬', L'億',
-        L'两'
+        L'两', L'兩', L'貳', L'參', L'叄'   // Traditional Chinese numerals
     };
 
     bool bFound = false;
@@ -412,7 +416,7 @@ bool BookText::isValidChapter(wchar_t text)
 {
     static const wchar_t VALID_CHAPTER[] =
     {
-        L'卷', L'章', L'部', L'节', L'集'
+        L'卷', L'章', L'部', L'节', L'節', L'集', L'回'
     };
 
     for (int i = 0; i < sizeof(VALID_CHAPTER) / sizeof(VALID_CHAPTER[0]); i++)
